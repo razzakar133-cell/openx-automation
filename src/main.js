@@ -23,6 +23,17 @@ let lastTopic = '';
 let recognition = null;
 let listening = false;
 let lastVoice = '';
+let chatKey = localStorage.getItem('openx_gemini_key') || '';
+let chatHist = loadChat();
+let chatBusy = false;
+
+function loadChat() {
+  try {
+    const value = JSON.parse(localStorage.getItem('openx_chat_v1') || '[]');
+    return Array.isArray(value) ? value.slice(-30) : [];
+  } catch { return []; }
+}
+function saveChat() { localStorage.setItem('openx_chat_v1', JSON.stringify(chatHist.slice(-30))); }
 
 function loadTasks() {
   try {
@@ -151,6 +162,24 @@ function render() {
         <p id="voiceStatus" class="muted">${listening ? 'শুনছি… 🎧' : 'ভয়েস বন্ধ আছে'}</p>
         ${lastVoice ? `<p class="muted">শেষ কমান্ড: ${escapeHTML(lastVoice)}</p>` : ''}
         <p class="muted">চলবে: Facebook / YouTube / Instagram / Threads খোলো • ক্যাপশন বানাও • কিউ দেখাও • লগ দেখাও • উপরে যাও<br>নোট: Chrome ব্রাউজারে ভালো চলে; APK-তে ফোনের WebView অনুযায়ী নাও চলতে পারে।</p>
+      </section>
+
+      <section class="card">
+        <h3>🤖 AI সহকারী</h3>
+        <p class="muted">Jewel-এর মতো ছোট AI — চ্যাট করো, ক্যাপশন বানাও, অ্যাপ চালাও। ফ্রি Gemini API দিয়ে চলে।</p>
+        ${chatKey ? `
+          <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>
+          <div id="chatBox">${chatHist.length ? chatHist.map(m => `
+            <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
+            ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
+          </div>
+          <input id="chatInput" placeholder="এখানে লিখো — যেমন: funny cat video-র ক্যাপশন বানাও">
+          <button id="sendChat">পাঠাও</button>
+          <button id="clearChat" class="secondary">চ্যাট মুছুন</button>` : `
+          <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
+          <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
+          <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
+          <button id="saveKey">Key সংরক্ষণ করো</button>`}
       </section>
 
       <section class="card">
@@ -332,8 +361,99 @@ async function handleVoiceCommand(raw) {
   render();
 }
 
+const AI_SYSTEM = 'তুমি OpenX অ্যাপের ভেতরের AI সহকারী। ব্যবহারকারী বাংলায় কথা বলে, তুমি বাংলায় উত্তর দাও। তুমি সাহায্য করো: ক্যাপশন বানানো, হ্যাশট্যাগ, পোস্ট প্ল্যান, অ্যাপ চালানো। অ্যাকশন লাগলে উত্তরের শেষে এই মার্কারগুলো ব্যবহার করো (এক লাইনে একটা): [OPEN:facebook] [OPEN:youtube] [OPEN:instagram] [OPEN:threads] [OPEN:google] [CAPTION:বিষয়] [ADDPOST:টাইটেল|facebook] — মার্কারগুলো উত্তরে দেখাবে না, অ্যাপ নিজে কাজ করবে। মার্কার ছাড়া সাধারণ উত্তর দাও।';
+
+async function runAiActions(text) {
+  const opens = [...text.matchAll(/\[OPEN:(facebook|youtube|instagram|threads|google)\]/gi)];
+  for (const m of opens) {
+    const sites = { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net', google: 'https://www.google.com' };
+    try { await Browser.open({ url: sites[m[1].toLowerCase()] }); } catch { /* ignore */ }
+  }
+  const cap = text.match(/\[CAPTION:([^\]]+)\]/i);
+  if (cap) {
+    lastTopic = cap[1].trim();
+    captions = makeCaptions(lastTopic);
+    addLog(`AI ক্যাপশন বানানো হয়েছে: ${lastTopic}`);
+  }
+  const post = text.match(/\[ADDPOST:([^|\]]+)\|?(facebook|youtube|instagram|threads)?\]/i);
+  if (post) {
+    const platform = (post[2] || 'facebook').toLowerCase();
+    dash.queue.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: post[1].trim(), desc: '', platform, when: new Date().toISOString(), status: 'Scheduled' });
+    saveDash();
+    addLog(`AI কিউতে যোগ করেছে: ${post[1].trim()} → ${platform}`);
+  }
+}
+
+async function sendChatMessage() {
+  const input = document.querySelector('#chatInput');
+  const text = (input?.value || '').trim();
+  if (!text || chatBusy) return;
+  if (!chatKey) return alert('প্রথমে Gemini API Key সংরক্ষণ করো।');
+  chatHist.push({ role: 'user', text });
+  saveChat();
+  chatBusy = true;
+  render();
+  try {
+    const contents = [{ role: 'user', parts: [{ text: AI_SYSTEM + '\n\nব্যবহারকারী: ' + text }] }];
+    for (const m of chatHist.slice(-8)) {
+      if (m.role === 'user' && m.text !== text) contents.push({ role: 'user', parts: [{ text: m.text }] });
+      if (m.role === 'ai') contents.push({ role: 'model', parts: [{ text: m.text }] });
+    }
+    contents.push({ role: 'user', parts: [{ text }] });
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(chatKey)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents }),
+    });
+    if (!res.ok) throw new Error('API ' + res.status);
+    const data = await res.json();
+    let reply = data?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join('') || '';
+    if (!reply.trim()) throw new Error('empty reply');
+    await runAiActions(reply);
+    reply = reply.replace(/\[(OPEN|CAPTION|ADDPOST):[^\]]+\]/gi, '').trim();
+    chatHist.push({ role: 'ai', text: reply });
+    saveChat();
+    addLog('🤖 AI উত্তর দিয়েছে');
+  } catch {
+    chatHist.push({ role: 'ai', text: 'দুঃখিত, AI-এর সাথে যোগাযোগ হয়নি — Key আর ইন্টারনেট চেক করো।' });
+    saveChat();
+  }
+  chatBusy = false;
+  render();
+}
+
 app.addEventListener('click', async event => {
   const target = event.target;
+
+  if (target.id === 'openAistudio') {
+    await Browser.open({ url: 'https://aistudio.google.com/app/apikey' });
+    return;
+  }
+  if (target.id === 'saveKey') {
+    const key = (document.querySelector('#geminiKey')?.value || '').trim();
+    if (!key) return alert('API Key লিখো।');
+    chatKey = key;
+    localStorage.setItem('openx_gemini_key', key);
+    addLog('🤖 AI Key সংরক্ষণ করা হয়েছে');
+    render();
+    return;
+  }
+  if (target.hasAttribute('data-change-key')) {
+    chatKey = '';
+    localStorage.removeItem('openx_gemini_key');
+    render();
+    return;
+  }
+  if (target.id === 'sendChat') {
+    sendChatMessage();
+    return;
+  }
+  if (target.id === 'clearChat' && confirm('চ্যাট ইতিহাস মুছবেন?')) {
+    chatHist = [];
+    saveChat();
+    render();
+    return;
+  }
 
   if (target.id === 'micBtn') {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -569,3 +689,10 @@ app.addEventListener('click', async event => {
 });
 
 render();
+
+app.addEventListener('keydown', event => {
+  if (event.target?.id === 'chatInput' && event.key === 'Enter') {
+    event.preventDefault();
+    sendChatMessage();
+  }
+});
