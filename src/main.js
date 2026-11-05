@@ -45,7 +45,7 @@ function loadTasks() {
 function saveTasks() { localStorage.setItem(TASKS_KEY, JSON.stringify(tasks)); }
 
 function loadDash() {
-  const fresh = { mode: 'api', platforms: {}, queue: [], log: [], published: 0, attempted: 0, connecting: null };
+  const fresh = { mode: 'api', platforms: {}, queue: [], log: [], published: 0, attempted: 0, connecting: null, visited: 0, tasksRun: 0, downloads: 0, bookmarks: [] };
   try {
     const saved = JSON.parse(localStorage.getItem(DASH_KEY) || 'null');
     if (!saved || typeof saved !== 'object') return fresh;
@@ -127,11 +127,19 @@ function render() {
       .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
       .navitem{display:block;width:100%;text-align:left;background:none;color:#dbe7f5;padding:12px;border-radius:9px;margin:2px 0;font-size:15px}
       .navitem:hover{background:#263b55}
+      .aihead{display:flex;align-items:center;gap:10px}
+      .avatar{font-size:26px;background:#263b55;border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center}
+      .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+      .chip{background:#101827;border:1px solid #2b3f58;color:#dbe7f5;padding:12px;border-radius:12px;font-size:14px;text-align:left}
+      .chatrow{display:flex;gap:8px;align-items:center}
+      .chatrow input{flex:1}
+      .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+      .tool{background:#101827;border:1px solid #2b3f58;color:#dbe7f5;padding:12px 4px;border-radius:12px;font-size:12px}
     </style>
     <div class="wrap">
       <header class="topbar">
         <button id="menuBtn" class="ghost">☰</button>
-        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.3 • সবকিছু এক জায়গায়</div></div>
+        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.4 • সবকিছু এক জায়গায়</div></div>
       </header>
       <div class="drawer ${sidebarOpen ? 'open' : ''}" id="drawer">
         <h3 style="margin-top:0">☰ মেনু</h3>
@@ -152,21 +160,48 @@ function render() {
       <div class="layout">
       <div class="col-chat">
       <section class="card" id="sec-ai">
-        <h3>🤖 AI সহকারী</h3>
-        <p class="muted">Jewel-এর মতো ছোট AI — চ্যাট করো, ক্যাপশন বানাও, অ্যাপ চালাও। ফ্রি Gemini API দিয়ে চলে।</p>
+        <div class="aihead">
+          <span class="avatar">🤖</span>
+          <div><b>AI Assistant</b><br><span class="pill on">● Online</span></div>
+          <button class="ghost" data-nav="settings" style="margin-left:auto">⚙️</button>
+        </div>
         ${chatKey ? `
-          <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>
-          <div id="chatBox">${chatHist.length ? chatHist.map(m => `
-            <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
-            ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
-          </div>
-          <input id="chatInput" placeholder="এখানে লিখো — যেমন: funny cat video-র ক্যাপশন বানাও">
-          <button id="sendChat">পাঠাও</button>
-          <button id="clearChat" class="secondary">চ্যাট মুছুন</button>` : `
-          <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
-          <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
-          <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
-          <button id="saveKey">Key সংরক্ষণ করো</button>`}
+        <div class="cap" style="margin-top:12px">👋 আপনি কী করতে চান?</div>
+        <div class="chips">
+          <button class="chip" data-chip="surf">⚡ ওয়েব সার্ফ</button>
+          <button class="chip" data-chip="content">📄 কনটেন্ট লিখুন</button>
+          <button class="chip" data-chip="search">🛒 অনুসন্ধান করুন</button>
+          <button class="chip" data-chip="ideas">💡 আইডিয়া দিন</button>
+          <button class="chip" data-chip="code">&lt;/&gt; কোড লিখুন</button>
+          <button class="chip" data-chip="more">••• আরও দেখুন</button>
+        </div>
+        <div id="chatBox">${chatHist.length ? chatHist.map(m => `
+          <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
+          ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
+        </div>
+        <div class="chatrow">
+          <input id="chatInput" placeholder="আপনার প্রশ্ন লিখুন...">
+          <button id="chatMicBtn" class="ghost">🎙️</button>
+          <button id="sendChat">➤</button>
+        </div>
+        <button id="clearChat" class="secondary">চ্যাট মুছুন</button>
+        <div class="stats" style="margin-top:12px">
+          <div class="stat"><b>${dash.visited || 0}</b><span>🌐 Visited Sites</span></div>
+          <div class="stat"><b>${dash.tasksRun || 0}</b><span>✅ Tasks Run</span></div>
+          <div class="stat"><b>${dash.downloads || 0}</b><span>⬇️ Downloads</span></div>
+        </div>
+        <h3 style="margin-top:14px">⚡ Quick Tools <button class="ghost" data-nav="settings" style="float:right">View All →</button></h3>
+        <div class="tools">
+          <button class="tool" data-tool="autoclick">🖱️<br>Auto Click</button>
+          <button class="tool" data-tool="autofill">📝<br>Auto Fill</button>
+          <button class="tool" data-tool="scheduler">📅<br>Scheduler</button>
+          <button class="tool" data-tool="bookmarks">⭐<br>Bookmarks</button>
+        </div>
+        <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>` : `
+        <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
+        <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
+        <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
+        <button id="saveKey">Key সংরক্ষণ করো</button>`}
       </section>
       <section class="card" id="sec-voice">
         <h3>🎙️ ভয়েস কন্ট্রোল</h3>
@@ -265,6 +300,10 @@ function render() {
         <button id="open">ওয়েবসাইট খোলো</button>
         <input id="search" placeholder="Google-এ কী সার্চ করবে?">
         <button id="searchBtn" class="secondary">Google Search</button>
+        <div id="bmList">${(dash.bookmarks || []).map(b => `
+          <div class="logitem">${escapeHTML(b.title)} <button class="ghost" data-open-bm="${b.id}">খোলো</button> <button class="danger" data-del-bm="${b.id}">✕</button></div>`).join('')}
+        </div>
+        <button id="addBookmark" class="secondary">🔖 এই ঠিকানা বুকমার্ক করো</button>
       </section>
 
       <section class="card" id="sec-tasks">
@@ -318,7 +357,7 @@ function render() {
         <h3>⚙️ সেটিংস</h3>
         <button id="exportData" class="secondary">ডেটা এক্সপোর্ট (JSON)</button>
         <button id="clearAll" class="danger">সব ডেটা মুছুন</button>
-        <p class="muted">OpenX Automation v2.3 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
+        <p class="muted">OpenX Automation v2.4 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
       </section>
       </div>
       </div>
@@ -356,6 +395,7 @@ async function handleVoiceCommand(raw) {
   let action = '';
   const openSite = async (url, name) => {
     await Browser.open({ url });
+    bumpVisit();
     action = `${name} খুলছি`;
   };
   if (cmd.includes('facebook') || cmd.includes('ফেসবুক')) await openSite('https://www.facebook.com', 'Facebook');
@@ -401,16 +441,18 @@ async function handleVoiceCommand(raw) {
 const AI_SYSTEM = 'তুমি OpenX অ্যাপের ভেতরের AI সহকারী। ব্যবহারকারী বাংলায় কথা বলে, তুমি বাংলায় উত্তর দাও। তুমি সাহায্য করো: ক্যাপশন বানানো, হ্যাশট্যাগ, পোস্ট প্ল্যান, অ্যাপ চালানো। অ্যাকশন লাগলে উত্তরের শেষে এই মার্কারগুলো ব্যবহার করো (এক লাইনে একটা): [OPEN:facebook] [OPEN:youtube] [OPEN:instagram] [OPEN:threads] [OPEN:google] [CAPTION:বিষয়] [ADDPOST:টাইটেল|facebook] — মার্কারগুলো উত্তরে দেখাবে না, অ্যাপ নিজে কাজ করবে। মার্কার ছাড়া সাধারণ উত্তর দাও।';
 
 async function runAiActions(text) {
+  let didAction = false;
   const opens = [...text.matchAll(/\[OPEN:(facebook|youtube|instagram|threads|google)\]/gi)];
   for (const m of opens) {
     const sites = { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net', google: 'https://www.google.com' };
-    try { await Browser.open({ url: sites[m[1].toLowerCase()] }); } catch { /* ignore */ }
+    try { await Browser.open({ url: sites[m[1].toLowerCase()] }); bumpVisit(); didAction = true; } catch { /* ignore */ }
   }
   const cap = text.match(/\[CAPTION:([^\]]+)\]/i);
   if (cap) {
     lastTopic = cap[1].trim();
     captions = makeCaptions(lastTopic);
     addLog(`AI ক্যাপশন বানানো হয়েছে: ${lastTopic}`);
+    didAction = true;
   }
   const post = text.match(/\[ADDPOST:([^|\]]+)\|?(facebook|youtube|instagram|threads)?\]/i);
   if (post) {
@@ -418,7 +460,9 @@ async function runAiActions(text) {
     dash.queue.unshift({ id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, title: post[1].trim(), desc: '', platform, when: new Date().toISOString(), status: 'Scheduled' });
     saveDash();
     addLog(`AI কিউতে যোগ করেছে: ${post[1].trim()} → ${platform}`);
+    didAction = true;
   }
+  if (didAction) bumpTasksRun();
 }
 
 async function sendChatMessage() {
@@ -459,6 +503,18 @@ async function sendChatMessage() {
   render();
 }
 
+function scrollToSec(id) {
+  const el = document.getElementById(id);
+  if (el && el.scrollIntoView) el.scrollIntoView();
+}
+function aiAsk(text) {
+  if (!chatKey) return alert('প্রথমে Gemini API Key সংরক্ষণ করো।');
+  const input = document.querySelector('#chatInput');
+  if (input) { input.value = text; sendChatMessage(); }
+}
+function bumpVisit() { dash.visited = (dash.visited || 0) + 1; saveDash(); }
+function bumpTasksRun() { dash.tasksRun = (dash.tasksRun || 0) + 1; saveDash(); }
+
 app.addEventListener('click', async event => {
   const target = event.target;
 
@@ -482,6 +538,7 @@ app.addEventListener('click', async event => {
 
   if (target.id === 'openAistudio') {
     await Browser.open({ url: 'https://aistudio.google.com/app/apikey' });
+    bumpVisit();
     return;
   }
   if (target.id === 'saveKey') {
@@ -506,6 +563,65 @@ app.addEventListener('click', async event => {
   if (target.id === 'clearChat' && confirm('চ্যাট ইতিহাস মুছবেন?')) {
     chatHist = [];
     saveChat();
+    render();
+    return;
+  }
+
+  if (target.dataset.chip) {
+    const c = target.dataset.chip;
+    if (c === 'surf') { scrollToSec('sec-browser'); document.querySelector('#url')?.focus(); }
+    else if (c === 'content') { scrollToSec('sec-caption'); document.querySelector('#capTopic')?.focus(); }
+    else if (c === 'search') { scrollToSec('sec-browser'); document.querySelector('#search')?.focus(); }
+    else if (c === 'ideas') aiAsk('আমাকে ৫টি ভালো ভাইরাল পোস্টের আইডিয়া দাও');
+    else if (c === 'code') aiAsk('একটা ছোট HTML/CSS কোডের উদাহরণ দাও');
+    else if (c === 'more') { sidebarOpen = true; render(); }
+    return;
+  }
+  if (target.dataset.tool) {
+    const t = target.dataset.tool;
+    if (t === 'autoclick') {
+      const connected = PLATFORMS.filter(p => platformState(p.id).connected);
+      if (!connected.length) return alert('আগে একটি প্ল্যাটফর্ম কানেক্ট করো।');
+      for (const p of connected) {
+        try { await Browser.open({ url: { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net' }[p.id] }); bumpVisit(); } catch { /* ignore */ }
+      }
+      addLog(`🖱️ Auto Click: ${connected.length}টি প্ল্যাটফর্ম খোলা হয়েছে`);
+      render();
+    } else if (t === 'autofill') {
+      if (!captions.length) return alert('আগে ক্যাপশন বানাও।');
+      scrollToSec('sec-planner');
+      const title = document.querySelector('#postTitle');
+      const desc = document.querySelector('#postDesc');
+      if (title) title.value = lastTopic || 'নতুন পোস্ট';
+      if (desc) desc.value = captions[0];
+      addLog('📝 Auto Fill: প্ল্যানার ভরা হয়েছে');
+    } else if (t === 'scheduler') scrollToSec('sec-planner');
+    else if (t === 'bookmarks') scrollToSec('sec-browser');
+    return;
+  }
+  if (target.id === 'chatMicBtn') {
+    document.querySelector('#micBtn')?.click();
+    return;
+  }
+  if (target.id === 'addBookmark') {
+    let url = document.querySelector('#url')?.value.trim();
+    if (!url) return alert('প্রথমে ঠিকানা লিখো।');
+    if (!/^https?:\/\//i.test(url)) url = `https://${url}`;
+    dash.bookmarks = dash.bookmarks || [];
+    dash.bookmarks.unshift({ id: `${Date.now()}`, title: url, url });
+    saveDash();
+    addLog(`🔖 বুকমার্ক যোগ হয়েছে: ${url}`);
+    render();
+    return;
+  }
+  if (target.dataset.openBm) {
+    const bm = (dash.bookmarks || []).find(b => b.id === target.dataset.openBm);
+    if (bm) { await Browser.open({ url: bm.url }); bumpVisit(); }
+    return;
+  }
+  if (target.dataset.delBm) {
+    dash.bookmarks = (dash.bookmarks || []).filter(b => b.id !== target.dataset.delBm);
+    saveDash();
     render();
     return;
   }
@@ -645,6 +761,7 @@ app.addEventListener('click', async event => {
     item.status = 'Published';
     dash.published += 1;
     dash.attempted += 1;
+    bumpTasksRun();
     saveDash();
     addLog(`✅ পাবলিশ হয়েছে: ${item.title} → ${pname}`);
     render();
@@ -666,6 +783,7 @@ app.addEventListener('click', async event => {
       const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid protocol');
       await Browser.open({ url: parsed.href });
+      bumpVisit();
     } catch {
       alert('ঠিকানাটি সঠিক নয় অথবা Browser খোলা যায়নি।');
     }
@@ -675,6 +793,7 @@ app.addEventListener('click', async event => {
     const query = document.querySelector('#search').value.trim();
     if (!query) return alert('সার্চের বিষয় লিখুন।');
     await Browser.open({ url: `https://www.google.com/search?q=${encodeURIComponent(query)}` });
+    bumpVisit();
     return;
   }
 
@@ -695,6 +814,7 @@ app.addEventListener('click', async event => {
     if (task && confirm('এই কাজটি অনুমোদন হিসেবে চিহ্নিত করবেন?')) {
       task.status = 'Approved — not executed';
       saveTasks();
+      bumpTasksRun();
       render();
     }
     return;
@@ -729,6 +849,8 @@ app.addEventListener('click', async event => {
     a.download = 'openx-backup.json';
     a.click();
     URL.revokeObjectURL(a.href);
+    dash.downloads = (dash.downloads || 0) + 1;
+    saveDash();
     addLog('ডেটা এক্সপোর্ট করা হয়েছে (JSON)');
     return;
   }
