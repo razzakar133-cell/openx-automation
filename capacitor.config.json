@@ -1,1 +1,8 @@
-ewogICJhcHBJZCI6ICJjb20ub3BlbnguYXV0b21hdGlvbiIsCiAgImFwcE5hbWUiOiAiT3BlblggQXV0b21hdGlvbiIsCiAgIndlYkRpciI6ICJkaXN0IiwKICAic2VydmVyIjogewogICAgImFuZHJvaWRTY2hlbWUiOiAiaHR0cHMiCiAgfQp9
+{
+  "appId": "com.openx.automation",
+  "appName": "OpenX Automation",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}
