@@ -1,1 +1,39 @@
-IyBPcGVuWCBBdXRvbWF0aW9uCgpBIHBob25lLWZpcnN0IEFuZHJvaWQgcHJvdG90eXBlIGJ1aWx0IHdpdGggVml0ZSArIENhcGFjaXRvci4KCiMjIEZlYXR1cmVzIGluIHYxCi0gT3BlbiB3ZWJzaXRlcyB1c2luZyB0aGUgZGV2aWNlIGJyb3dzZXIKLSBHb29nbGUgc2VhcmNoIHNob3J0Y3V0Ci0gTG9jYWwgdGFzayBwbGFubmVyCi0gQXBwcm92YWwvcmVqZWN0aW9uIHF1ZXVlCi0gTG9jYWwgYWN0aXZpdHkgaGlzdG9yeQoKIyMgSW1wb3J0YW50IGxpbWl0YXRpb25zClRoaXMgaXMgYSBwcm90b3R5cGUsIG5vdCBhIGZ1bGwgQUkgb3IgZGV2aWNlLXdpZGUgYXV0b21hdGlvbiBhZ2VudC4KLSBBcHByb3ZpbmcgYSB0YXNrIG9ubHkgbWFya3MgaXQgYXBwcm92ZWQ7IGl0IGRvZXMgbm90IGV4ZWN1dGUgaXQuCi0gSXQgZG9lcyBub3QgcmVhZCBtZXNzYWdlcywgcG9zdCB0byBzb2NpYWwgbmV0d29ya3MsIHNlbmQgZW1haWxzLCBvciBjb250cm9sIG90aGVyIGFwcHMuCi0gVGFza3MgYXJlIHN0b3JlZCBsb2NhbGx5IGluIHRoZSBhcHAncyBicm93c2VyIHN0b3JhZ2UgYW5kIGFyZSBub3QgY2xvdWQtc3luY2VkLgotIERldmljZS13aWRlIGF1dG9tYXRpb24gcmVxdWlyZXMgYSBzZXBhcmF0ZWx5IGltcGxlbWVudGVkIEFuZHJvaWQgQWNjZXNzaWJpbGl0eSBTZXJ2aWNlIGFuZCBleHBsaWNpdCB1c2VyIHBlcm1pc3Npb24uCi0gQUkgcmVxdWlyZXMgYSBzZXBhcmF0ZWx5IGNvbmZpZ3VyZWQgbW9kZWwvcHJvdmlkZXIuIE5vIEFQSSBrZXkgaXMgaW5jbHVkZWQuCgojIyBCdWlsZCBBUEsgdXNpbmcgR2l0SHViIEFjdGlvbnMKMS4gQ3JlYXRlIGEgcHVibGljIEdpdEh1YiByZXBvc2l0b3J5IG5hbWVkIGBvcGVueC1hdXRvbWF0aW9uYC4KMi4gVXBsb2FkIGFsbCBmaWxlcyBhbmQgZm9sZGVycyBmcm9tIHRoaXMgcHJvamVjdCB0byB0aGUgcmVwb3NpdG9yeSByb290LgozLiBDb21taXQgdG8gdGhlIGBtYWluYCBicmFuY2guCjQuIE9wZW4gdGhlIHJlcG9zaXRvcnkncyBBY3Rpb25zIHRhYi4KNS4gU2VsZWN0IGBCdWlsZCBPcGVuWCBBbmRyb2lkIEFQS2AgYW5kIHJ1biB0aGUgd29ya2Zsb3cgKG9yIHdhaXQgZm9yIHB1c2ggYnVpbGQpLgo2LiBXaGVuIGNvbXBsZXRlLCBvcGVuIHRoZSB3b3JrZmxvdyBydW4gYW5kIGRvd25sb2FkIHRoZSBgT3BlblgtQXV0b21hdGlvbi1BUEtgIGFydGlmYWN0Lgo3LiBFeHRyYWN0IHRoZSBaSVAgYW5kIGluc3RhbGwgYGFwcC1kZWJ1Zy5hcGtgIG9uIHlvdXIgQW5kcm9pZCBwaG9uZS4KCiMjIExvY2FsIGRldmVsb3BtZW50ClJlcXVpcmVzIE5vZGUuanMgMjAgYW5kIEphdmEgMTc6CmBgYGJhc2gKbnBtIGluc3RhbGwKbnBtIHJ1biBidWlsZApucHggY2FwIGFkZCBhbmRyb2lkCm5weCBjYXAgc3luYyBhbmRyb2lkCmBgYAoKIyMgU2VjdXJpdHkKTmV2ZXIgY29tbWl0IHBhc3N3b3JkcywgYWNjZXNzIHRva2VucywgcHJpdmF0ZSBBUEkga2V5cywgb3IgcGVyc29uYWwgYWNjb3VudCBjcmVkZW50aWFscy4K
+# OpenX Automation
+
+A phone-first Android prototype built with Vite + Capacitor.
+
+## Features in v1
+- Open websites using the device browser
+- Google search shortcut
+- Local task planner
+- Approval/rejection queue
+- Local activity history
+
+## Important limitations
+This is a prototype, not a full AI or device-wide automation agent.
+- Approving a task only marks it approved; it does not execute it.
+- It does not read messages, post to social networks, send emails, or control other apps.
+- Tasks are stored locally in the app's browser storage and are not cloud-synced.
+- Device-wide automation requires a separately implemented Android Accessibility Service and explicit user permission.
+- AI requires a separately configured model/provider. No API key is included.
+
+## Build APK using GitHub Actions
+1. Create a public GitHub repository named `openx-automation`.
+2. Upload all files and folders from this project to the repository root.
+3. Commit to the `main` branch.
+4. Open the repository's Actions tab.
+5. Select `Build OpenX Android APK` and run the workflow (or wait for push build).
+6. When complete, open the workflow run and download the `OpenX-Automation-APK` artifact.
+7. Extract the ZIP and install `app-debug.apk` on your Android phone.
+
+## Local development
+Requires Node.js 20 and Java 17:
+```bash
+npm install
+npm run build
+npx cap add android
+npx cap sync android
+```
+
+## Security
+Never commit passwords, access tokens, private API keys, or personal account credentials.
