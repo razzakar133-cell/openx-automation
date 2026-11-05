@@ -1,1 +1,18 @@
-ewogICJuYW1lIjogIm9wZW54LWF1dG9tYXRpb24iLAogICJ2ZXJzaW9uIjogIjEuMC4wIiwKICAicHJpdmF0ZSI6IHRydWUsCiAgInR5cGUiOiAibW9kdWxlIiwKICAic2NyaXB0cyI6IHsKICAgICJidWlsZCI6ICJ2aXRlIgogIH0sCiAgImRlcGVuZGVuY2llcyI6IHsKICAgICJAY2FwYWNpdG9yL2FuZHJvaWQiOiAiNi4yLjEiLAogICAgIkBjYXBhY2l0b3IvYnJvd3NlciI6ICI2LjAuNiIsCiAgICAiQGNhcGFjaXRvci9jb3JlIjogIjYuMi4xIgogIH0sCiAgImRldkRlcGVuZGVuY2llcyI6IHsKICAgICJAY2FwYWNpdG9yL2NsaSI6ICI2LjIuMSIsCiAgICAidml0ZSI6ICI1LjQuMTQiCiAgfQp9
+{
+  "name": "openx-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.1",
+    "@capacitor/browser": "6.0.6",
+    "@capacitor/core": "6.2.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.1",
+    "vite": "5.4.14"
+  }
+}
