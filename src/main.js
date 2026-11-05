@@ -23,6 +23,7 @@ let lastTopic = '';
 let recognition = null;
 let listening = false;
 let lastVoice = '';
+let sidebarOpen = false;
 let chatKey = localStorage.getItem('openx_gemini_key') || '';
 let chatHist = loadChat();
 let chatBusy = false;
@@ -118,22 +119,81 @@ function render() {
       .cap{background:#101827;border:1px solid #2b3f58;border-radius:10px;padding:10px;margin-top:8px;white-space:pre-wrap}
       .logitem{font-size:13px;color:#c5d4e7}
       .logitem time{color:#8fa3bb;font-size:11px}
+      .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#0b0f1a;padding:10px 0;z-index:20}
+      .layout{display:grid;grid-template-columns:1fr;gap:0}
+      @media (min-width:760px){.layout{grid-template-columns:340px 1fr;gap:14px;align-items:start}.col-chat{position:sticky;top:70px}}
+      .drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:#1b293d;z-index:50;padding:16px;transform:translateX(-105%);transition:transform .25s;overflow:auto}
+      .drawer.open{transform:translateX(0)}
+      .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
+      .navitem{display:block;width:100%;text-align:left;background:none;color:#dbe7f5;padding:12px;border-radius:9px;margin:2px 0;font-size:15px}
+      .navitem:hover{background:#263b55}
     </style>
     <div class="wrap">
-      <h1>🚀 অটো পোস্টিং ড্যাশবোর্ড</h1>
-      <div class="muted">OpenX Automation v2.0 • সবকিছু এক জায়গায় নিয়ন্ত্রণ করো</div>
+      <header class="topbar">
+        <button id="menuBtn" class="ghost">☰</button>
+        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.3 • সবকিছু এক জায়গায়</div></div>
+      </header>
+      <div class="drawer ${sidebarOpen ? 'open' : ''}" id="drawer">
+        <h3 style="margin-top:0">☰ মেনু</h3>
+        <button class="navitem" data-nav="live">🔴 লাইভ</button>
+        <button class="navitem" data-nav="ai">🤖 AI সহকারী</button>
+        <button class="navitem" data-nav="voice">🎙️ ভয়েস কন্ট্রোল</button>
+        <button class="navitem" data-nav="platforms">🔗 প্ল্যাটফর্ম</button>
+        <button class="navitem" data-nav="caption">✨ AI ক্যাপশন</button>
+        <button class="navitem" data-nav="planner">🗓️ পোস্ট প্ল্যানার</button>
+        <button class="navitem" data-nav="queue">📤 পাবলিশ কিউ</button>
+        <button class="navitem" data-nav="browser">🌐 Browser</button>
+        <button class="navitem" data-nav="tasks">🤖 টাস্ক প্ল্যানার</button>
+        <button class="navitem" data-nav="log">🧾 অ্যাক্টিভিটি লগ</button>
+        <button class="navitem" data-nav="settings">⚙️ সেটিংস</button>
+        <button class="navitem" data-close-sidebar>✕ বন্ধ করো</button>
+      </div>
+      ${sidebarOpen ? '<div class="backdrop" data-close-sidebar></div>' : ''}
+      <div class="layout">
+      <div class="col-chat">
+      <section class="card" id="sec-ai">
+        <h3>🤖 AI সহকারী</h3>
+        <p class="muted">Jewel-এর মতো ছোট AI — চ্যাট করো, ক্যাপশন বানাও, অ্যাপ চালাও। ফ্রি Gemini API দিয়ে চলে।</p>
+        ${chatKey ? `
+          <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>
+          <div id="chatBox">${chatHist.length ? chatHist.map(m => `
+            <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
+            ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
+          </div>
+          <input id="chatInput" placeholder="এখানে লিখো — যেমন: funny cat video-র ক্যাপশন বানাও">
+          <button id="sendChat">পাঠাও</button>
+          <button id="clearChat" class="secondary">চ্যাট মুছুন</button>` : `
+          <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
+          <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
+          <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
+          <button id="saveKey">Key সংরক্ষণ করো</button>`}
+      </section>
+      <section class="card" id="sec-voice">
+        <h3>🎙️ ভয়েস কন্ট্রোল</h3>
+        <p class="muted">মাইক চালু করে বলো — যেমন "Facebook খোলো", "ক্যাপশন বানাও", "কিউ দেখাও"।</p>
+        <button id="micBtn">${listening ? '⏹️ ভয়েস বন্ধ করো' : '🎙️ ভয়েস চালু করো'}</button>
+        <p id="voiceStatus" class="muted">${listening ? 'শুনছি… 🎧' : 'ভয়েস বন্ধ আছে'}</p>
+        ${lastVoice ? `<p class="muted">শেষ কমান্ড: ${escapeHTML(lastVoice)}</p>` : ''}
+        <p class="muted">চলবে: Facebook / YouTube / Instagram / Threads খোলো • ক্যাপশন বানাও • কিউ দেখাও • লগ দেখাও • উপরে যাও<br>নোট: Chrome ব্রাউজারে ভালো চলে; APK-তে ফোনের WebView অনুযায়ী নাও চলতে পারে।</p>
+      </section>
+      </div>
+      <div class="col-live">
+      <section class="card" id="sec-live">
+        <h3>🔴 লাইভ — এখন কী হচ্ছে</h3>
+        <div class="stats">
+          <div class="stat"><b>${totalPosts}</b><span>মোট পোস্ট</span></div>
+          <div class="stat"><b>${success}</b><span>সফলতা</span></div>
+          <div class="stat"><b>${connectedCount}/4</b><span>সংযুক্ত</span></div>
+        </div>
+        <p class="muted">সর্বশেষ: ${dash.log[0] ? escapeHTML(dash.log[0].text) + ' • ' + fmtTime(dash.log[0].ts) : 'এখনো কিছু হয়নি'}</p>
+        <p class="muted">কিউ: ${dash.queue.filter(q => q.status !== 'Published').length}টি অপেক্ষমাণ • পাবলিশ: ${dash.published}</p>
+      </section>
 
       <div class="row" style="margin-top:12px">
         ${MODES.map(m => `<button class="modebtn secondary ${dash.mode === m.id ? 'on' : ''}" data-mode="${m.id}">${m.name}<small>${m.desc}</small></button>`).join('')}
       </div>
 
-      <div class="stats" style="margin-top:12px">
-        <div class="stat"><b>${totalPosts}</b><span>মোট পোস্ট</span></div>
-        <div class="stat"><b>${success}</b><span>সফলতা</span></div>
-        <div class="stat"><b>${connectedCount}/4</b><span>সংযুক্ত প্ল্যাটফর্ম</span></div>
-      </div>
-
-      <section class="card">
+      <section class="card" id="sec-platforms">
         <h3>🔗 প্ল্যাটফর্ম</h3>
         <div class="grid">
           ${PLATFORMS.map(p => {
@@ -155,34 +215,9 @@ function render() {
         <p class="muted notice">টোকেন শুধু এই ডিভাইসেই থাকে, কোথাও পাঠানো হয় না। আসল পোস্টের জন্য প্ল্যাটফর্মের অফিসিয়াল API অনুমোদন লাগবে।</p>
       </section>
 
-      <section class="card">
-        <h3>🎙️ ভয়েস কন্ট্রোল</h3>
-        <p class="muted">মাইক চালু করে বলো — যেমন "Facebook খোলো", "ক্যাপশন বানাও", "কিউ দেখাও"।</p>
-        <button id="micBtn">${listening ? '⏹️ ভয়েস বন্ধ করো' : '🎙️ ভয়েস চালু করো'}</button>
-        <p id="voiceStatus" class="muted">${listening ? 'শুনছি… 🎧' : 'ভয়েস বন্ধ আছে'}</p>
-        ${lastVoice ? `<p class="muted">শেষ কমান্ড: ${escapeHTML(lastVoice)}</p>` : ''}
-        <p class="muted">চলবে: Facebook / YouTube / Instagram / Threads খোলো • ক্যাপশন বানাও • কিউ দেখাও • লগ দেখাও • উপরে যাও<br>নোট: Chrome ব্রাউজারে ভালো চলে; APK-তে ফোনের WebView অনুযায়ী নাও চলতে পারে।</p>
-      </section>
 
-      <section class="card">
-        <h3>🤖 AI সহকারী</h3>
-        <p class="muted">Jewel-এর মতো ছোট AI — চ্যাট করো, ক্যাপশন বানাও, অ্যাপ চালাও। ফ্রি Gemini API দিয়ে চলে।</p>
-        ${chatKey ? `
-          <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>
-          <div id="chatBox">${chatHist.length ? chatHist.map(m => `
-            <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
-            ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
-          </div>
-          <input id="chatInput" placeholder="এখানে লিখো — যেমন: funny cat video-র ক্যাপশন বানাও">
-          <button id="sendChat">পাঠাও</button>
-          <button id="clearChat" class="secondary">চ্যাট মুছুন</button>` : `
-          <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
-          <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
-          <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
-          <button id="saveKey">Key সংরক্ষণ করো</button>`}
-      </section>
 
-      <section class="card">
+      <section class="card" id="sec-caption">
         <h3>✨ AI ক্যাপশন</h3>
         <input id="capTopic" value="${escapeHTML(lastTopic)}" placeholder="বিষয় লিখো — যেমন: funny cat video">
         <div class="row">
@@ -195,7 +230,7 @@ function render() {
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-planner">
         <h3>🗓️ পোস্ট প্ল্যানার</h3>
         <input id="postTitle" maxlength="240" placeholder="পোস্টের টাইটেল">
         <textarea id="postDesc" placeholder="বিবরণ / ক্যাপশন (ঐচ্ছিক)"></textarea>
@@ -206,7 +241,7 @@ function render() {
         <button id="addPost">কিউতে যোগ করো</button>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-queue">
         <h3>📤 পাবলিশ কিউ</h3>
         <p class="muted notice">এই সংস্করণে "পাবলিশ" মানে লোকাল রেকর্ড — আসল পোস্ট প্ল্যাটফর্মের অফিসিয়াল API দিয়ে হবে।</p>
         <div id="queueList">${dash.queue.length ? dash.queue.map(q => `
@@ -224,7 +259,7 @@ function render() {
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-browser">
         <h3>🌐 Browser</h3>
         <input id="url" placeholder="example.com অথবা https://example.com" autocomplete="url">
         <button id="open">ওয়েবসাইট খোলো</button>
@@ -232,7 +267,7 @@ function render() {
         <button id="searchBtn" class="secondary">Google Search</button>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-tasks">
         <h3>🤖 Agent Task Planner</h3>
         <p class="muted">কাজের নির্দেশ লিখলে সেটি Approval Queue-তে যাবে।</p>
         <input id="taskTitle" maxlength="240" placeholder="যেমন: একটি Facebook পোস্টের খসড়া তৈরি করো">
@@ -246,7 +281,7 @@ function render() {
         <button id="addTask">কাজ যোগ করো</button>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-tasks">
         <h3>🛡️ Approval Queue</h3>
         <p class="muted notice">Approve করলে শুধু অনুমোদনের রেকর্ড হবে। এই সংস্করণ নিজে থেকে পোস্ট, মেসেজ, ইমেইল বা কেনাকাটা করবে না।</p>
         <div id="taskList">${tasks.length ? tasks.map(task => `
@@ -265,13 +300,13 @@ function render() {
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-tasks">
         <h3>📊 Activity History</h3>
         <p id="historyCount" class="muted">মোট কাজ: ${tasks.length} • পাবলিশ: ${dash.published}</p>
         <button id="clearHistory" class="danger">সব ইতিহাস মুছুন</button>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-log">
         <h3>🧾 অ্যাক্টিভিটি লগ</h3>
         <div id="logList">${dash.log.length ? dash.log.map(e => `
           <div class="logitem"><time>${escapeHTML(fmtTime(e.ts))}</time> — ${escapeHTML(e.text)}</div>`).join('') : '<p class="muted">এখনো কোনো অ্যাক্টিভিটি নেই।</p>'}
@@ -279,12 +314,14 @@ function render() {
         <button id="clearLog" class="secondary">লগ মুছুন</button>
       </section>
 
-      <section class="card">
+      <section class="card" id="sec-settings">
         <h3>⚙️ সেটিংস</h3>
         <button id="exportData" class="secondary">ডেটা এক্সপোর্ট (JSON)</button>
         <button id="clearAll" class="danger">সব ডেটা মুছুন</button>
-        <p class="muted">OpenX Automation v2.0 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
+        <p class="muted">OpenX Automation v2.3 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
       </section>
+      </div>
+      </div>
     </div>
   `;
 }
@@ -424,6 +461,24 @@ async function sendChatMessage() {
 
 app.addEventListener('click', async event => {
   const target = event.target;
+
+  if (target.id === 'menuBtn') {
+    sidebarOpen = !sidebarOpen;
+    render();
+    return;
+  }
+  if (target.hasAttribute('data-close-sidebar')) {
+    sidebarOpen = false;
+    render();
+    return;
+  }
+  if (target.dataset.nav) {
+    sidebarOpen = false;
+    render();
+    const el = document.getElementById('sec-' + target.dataset.nav);
+    if (el && el.scrollIntoView) el.scrollIntoView();
+    return;
+  }
 
   if (target.id === 'openAistudio') {
     await Browser.open({ url: 'https://aistudio.google.com/app/apikey' });
