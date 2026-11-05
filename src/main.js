@@ -85,61 +85,65 @@ function render() {
   app.innerHTML = `
     <style>
       *{box-sizing:border-box}
-      body{margin:0;background:#0b0f1a;color:#f4f7fb;font-family:system-ui,Arial,sans-serif}
+      body{margin:0;background:#eef2f7;color:#1a2433;font-family:system-ui,Arial,sans-serif}
       .wrap{padding:16px;max-width:720px;margin:auto}
-      h1{color:#54d6a0;margin-bottom:2px;font-size:24px}
+      h1{color:#1d4ed8;margin-bottom:2px;font-size:24px}
       h3{margin:0 0 8px}
-      .muted{color:#b8c5d6;font-size:13px;line-height:1.5}
-      .card{background:#1b293d;padding:16px;margin:14px 0;border-radius:14px}
-      input,select,textarea{width:100%;padding:12px;margin:7px 0;border:1px solid #506078;border-radius:9px;background:#101827;color:white;font-size:15px}
+      .muted{color:#5b6b7f;font-size:13px;line-height:1.5}
+      .card{background:#ffffff;padding:16px;margin:14px 0;border-radius:14px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(15,23,42,.08)}
+      input,select,textarea{width:100%;padding:12px;margin:7px 0;border:1px solid #cbd5e1;border-radius:9px;background:#ffffff;color:#1a2433;font-size:15px}
       textarea{min-height:70px;resize:vertical}
-      button{border:0;border-radius:9px;padding:11px 14px;margin:5px 4px 5px 0;background:#54d6a0;color:#10221b;font-weight:700;font-size:14px}
-      button.secondary{background:#354963;color:white}
-      button.danger{background:#b94343;color:white}
-      button.ghost{background:#263b55;color:#dbe7f5}
+      button{border:0;border-radius:9px;padding:11px 14px;margin:5px 4px 5px 0;background:#2563eb;color:white;font-weight:700;font-size:14px}
+      button.secondary{background:#e2e8f0;color:#1a2433}
+      button.danger{background:#dc2626;color:white}
+      button.ghost{background:#f1f5f9;color:#334155}
       button:disabled{opacity:.45}
       .row{display:flex;gap:8px;flex-wrap:wrap}
       .row button{flex:1}
-      .pill{display:inline-block;background:#263b55;padding:4px 9px;border-radius:20px;font-size:11px}
-      .pill.on{background:#14532d;color:#86efac}
-      .pill.warn{background:#713f12;color:#fde68a}
+      .pill{display:inline-block;background:#e2e8f0;padding:4px 9px;border-radius:20px;font-size:11px}
+      .pill.on{background:#dcfce7;color:#15803d}
+      .pill.warn{background:#fef3c7;color:#b45309}
       .stats{display:flex;gap:10px;flex-wrap:wrap}
-      .stat{flex:1;min-width:100px;background:#1b293d;border:1px solid #2b3f58;border-radius:12px;padding:12px;text-align:center}
-      .stat b{font-size:22px;display:block;color:#54d6a0}
-      .stat span{font-size:12px;color:#b8c5d6}
+      .stat{flex:1;min-width:100px;background:#dbeafe;border:1px solid #e2e8f0;border-radius:12px;padding:12px;text-align:center}
+      .stat:nth-child(2){background:#dcfce7}
+      .stat:nth-child(3){background:#ede9fe}
+      .stat b{font-size:22px;display:block;color:#1d4ed8}
+      .stat:nth-child(2) b{color:#15803d}
+      .stat:nth-child(3) b{color:#7c3aed}
+      .stat span{font-size:12px;color:#475569}
       .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-      .plat{background:#101827;border:1px solid #2b3f58;border-radius:12px;padding:12px}
+      .plat{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px}
       .plat .dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px}
       .plat b{font-size:15px}
-      .modebtn.on{background:#54d6a0}
+      .modebtn.on{background:#2563eb;color:white}
       .modebtn small{display:block;font-weight:400;font-size:11px;opacity:.75}
-      .task,.qitem,.logitem{border:1px solid #40536d;padding:12px;border-radius:10px;margin-top:10px;overflow-wrap:anywhere}
-      .status{font-size:12px;color:#c5d4e7}
-      .notice{border-left:3px solid #e6b450;padding:8px 10px;background:#263247;border-radius:5px}
-      .cap{background:#101827;border:1px solid #2b3f58;border-radius:10px;padding:10px;margin-top:8px;white-space:pre-wrap}
-      .logitem{font-size:13px;color:#c5d4e7}
-      .logitem time{color:#8fa3bb;font-size:11px}
-      .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#0b0f1a;padding:10px 0;z-index:20}
+      .task,.qitem,.logitem{border:1px solid #e2e8f0;padding:12px;border-radius:10px;margin-top:10px;overflow-wrap:anywhere}
+      .status{font-size:12px;color:#475569}
+      .notice{border-left:3px solid #f59e0b;padding:8px 10px;background:#fef3c7;border-radius:5px}
+      .cap{background:#f1f5f9;border:1px solid #e2e8f0;border-radius:10px;padding:10px;margin-top:8px;white-space:pre-wrap}
+      .logitem{font-size:13px;color:#475569}
+      .logitem time{color:#94a3b8;font-size:11px}
+      .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;background:#eef2f7;padding:10px 0;z-index:20}
       .layout{display:grid;grid-template-columns:1fr;gap:0}
       @media (min-width:760px){.layout{grid-template-columns:340px 1fr;gap:14px;align-items:start}.col-chat{position:sticky;top:70px}}
-      .drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:#1b293d;z-index:50;padding:16px;transform:translateX(-105%);transition:transform .25s;overflow:auto}
+      .drawer{position:fixed;top:0;left:0;bottom:0;width:260px;background:#ffffff;z-index:50;padding:16px;transform:translateX(-105%);transition:transform .25s;overflow:auto;box-shadow:0 0 20px rgba(15,23,42,.2)}
       .drawer.open{transform:translateX(0)}
       .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:40}
-      .navitem{display:block;width:100%;text-align:left;background:none;color:#dbe7f5;padding:12px;border-radius:9px;margin:2px 0;font-size:15px}
-      .navitem:hover{background:#263b55}
+      .navitem{display:block;width:100%;text-align:left;background:none;color:#1a2433;padding:12px;border-radius:9px;margin:2px 0;font-size:15px}
+      .navitem:hover{background:#f1f5f9}
       .aihead{display:flex;align-items:center;gap:10px}
-      .avatar{font-size:26px;background:#263b55;border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center}
+      .avatar{font-size:26px;background:#dbeafe;border-radius:50%;width:46px;height:46px;display:flex;align-items:center;justify-content:center}
       .chips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
-      .chip{background:#101827;border:1px solid #2b3f58;color:#dbe7f5;padding:12px;border-radius:12px;font-size:14px;text-align:left}
+      .chip{background:#f1f5f9;border:1px solid #e2e8f0;color:#1a2433;padding:12px;border-radius:12px;font-size:14px;text-align:left}
       .chatrow{display:flex;gap:8px;align-items:center}
       .chatrow input{flex:1}
       .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
-      .tool{background:#101827;border:1px solid #2b3f58;color:#dbe7f5;padding:12px 4px;border-radius:12px;font-size:12px}
+      .tool{background:#f8fafc;border:1px solid #e2e8f0;color:#1a2433;padding:12px 4px;border-radius:12px;font-size:12px}
     </style>
     <div class="wrap">
       <header class="topbar">
         <button id="menuBtn" class="ghost">☰</button>
-        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.4 • সবকিছু এক জায়গায়</div></div>
+        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.5 • সবকিছু এক জায়গায়</div></div>
       </header>
       <div class="drawer ${sidebarOpen ? 'open' : ''}" id="drawer">
         <h3 style="margin-top:0">☰ মেনু</h3>
@@ -164,8 +168,9 @@ function render() {
           <span class="avatar">🤖</span>
           <div><b>AI Assistant</b><br><span class="pill on">● Online</span></div>
           <button class="ghost" data-nav="settings" style="margin-left:auto">⚙️</button>
+          <span class="avatar">👤</span>
         </div>
-        ${chatKey ? `
+
         <div class="cap" style="margin-top:12px">👋 আপনি কী করতে চান?</div>
         <div class="chips">
           <button class="chip" data-chip="surf">⚡ ওয়েব সার্ফ</button>
@@ -176,7 +181,7 @@ function render() {
           <button class="chip" data-chip="more">••• আরও দেখুন</button>
         </div>
         <div id="chatBox">${chatHist.length ? chatHist.map(m => `
-          <div class="cap" style="${m.role === 'user' ? 'border-color:#54d6a0;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
+          <div class="cap" style="${m.role === 'user' ? 'border-color:#2563eb;text-align:right' : ''}"><b>${m.role === 'user' ? 'তুমি' : 'AI'}:</b> ${escapeHTML(m.text)}</div>`).join('') : '<p class="muted">হাই! আমি তোমার AI সহকারী — কী করতে চাও বলো। 😊</p>'}
           ${chatBusy ? '<p class="muted">লিখছি…</p>' : ''}
         </div>
         <div class="chatrow">
@@ -197,8 +202,8 @@ function render() {
           <button class="tool" data-tool="scheduler">📅<br>Scheduler</button>
           <button class="tool" data-tool="bookmarks">⭐<br>Bookmarks</button>
         </div>
-        <p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>` : `
-        <p class="muted notice">প্রথমে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
+        ${chatKey ? `<p class="muted">API Key সংরক্ষিত ✓ <button class="ghost" data-change-key>Key বদলাও</button></p>` : `
+        <p class="muted notice">AI-এর সাথে কথা বলতে ফ্রি Gemini API Key দাও — একদম ফ্রি, টাকা লাগে না।</p>
         <button id="openAistudio" class="secondary">ফ্রি Key নাও (aistudio.google.com)</button>
         <input id="geminiKey" type="password" placeholder="Gemini API Key এখানে লিখো">
         <button id="saveKey">Key সংরক্ষণ করো</button>`}
@@ -357,7 +362,7 @@ function render() {
         <h3>⚙️ সেটিংস</h3>
         <button id="exportData" class="secondary">ডেটা এক্সপোর্ট (JSON)</button>
         <button id="clearAll" class="danger">সব ডেটা মুছুন</button>
-        <p class="muted">OpenX Automation v2.4 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
+        <p class="muted">OpenX Automation v2.5 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
       </section>
       </div>
       </div>
