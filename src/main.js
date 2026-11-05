@@ -20,6 +20,9 @@ let tasks = loadTasks();
 let dash = loadDash();
 let captions = [];
 let lastTopic = '';
+let recognition = null;
+let listening = false;
+let lastVoice = '';
 
 function loadTasks() {
   try {
@@ -139,6 +142,15 @@ function render() {
           }).join('')}
         </div>
         <p class="muted notice">টোকেন শুধু এই ডিভাইসেই থাকে, কোথাও পাঠানো হয় না। আসল পোস্টের জন্য প্ল্যাটফর্মের অফিসিয়াল API অনুমোদন লাগবে।</p>
+      </section>
+
+      <section class="card">
+        <h3>🎙️ ভয়েস কন্ট্রোল</h3>
+        <p class="muted">মাইক চালু করে বলো — যেমন "Facebook খোলো", "ক্যাপশন বানাও", "কিউ দেখাও"।</p>
+        <button id="micBtn">${listening ? '⏹️ ভয়েস বন্ধ করো' : '🎙️ ভয়েস চালু করো'}</button>
+        <p id="voiceStatus" class="muted">${listening ? 'শুনছি… 🎧' : 'ভয়েস বন্ধ আছে'}</p>
+        ${lastVoice ? `<p class="muted">শেষ কমান্ড: ${escapeHTML(lastVoice)}</p>` : ''}
+        <p class="muted">চলবে: Facebook / YouTube / Instagram / Threads খোলো • ক্যাপশন বানাও • কিউ দেখাও • লগ দেখাও • উপরে যাও<br>নোট: Chrome ব্রাউজারে ভালো চলে; APK-তে ফোনের WebView অনুযায়ী নাও চলতে পারে।</p>
       </section>
 
       <section class="card">
@@ -262,8 +274,106 @@ function makeHashtags(topic) {
   return [...tags, '#viral', '#reels', '#bangladesh', '#trending'].join(' ');
 }
 
+function speak(text) {
+  try {
+    if (!('speechSynthesis' in window)) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'bn-BD';
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(u);
+  } catch { /* voice feedback optional */ }
+}
+
+async function handleVoiceCommand(raw) {
+  const cmd = raw.toLowerCase();
+  lastVoice = raw;
+  let action = '';
+  const openSite = async (url, name) => {
+    await Browser.open({ url });
+    action = `${name} খুলছি`;
+  };
+  if (cmd.includes('facebook') || cmd.includes('ফেসবুক')) await openSite('https://www.facebook.com', 'Facebook');
+  else if (cmd.includes('youtube') || cmd.includes('ইউটিউব')) await openSite('https://www.youtube.com', 'YouTube');
+  else if (cmd.includes('instagram') || cmd.includes('ইনস্টাগ্রাম')) await openSite('https://www.instagram.com', 'Instagram');
+  else if (cmd.includes('threads') || cmd.includes('থ্রেড')) await openSite('https://www.threads.net', 'Threads');
+  else if (cmd.includes('গুগল') || cmd.includes('google')) await openSite('https://www.google.com', 'Google');
+  else if (cmd.includes('ক্যাপশন')) {
+    const topic = document.querySelector('#capTopic')?.value.trim();
+    if (!topic) action = 'প্রথমে ক্যাপশনের বিষয় লিখো';
+    else {
+      lastTopic = topic;
+      captions = makeCaptions(topic);
+      addLog(`AI ক্যাপশন বানানো হয়েছে: ${topic}`);
+      action = 'ক্যাপশন বানানো হয়েছে';
+    }
+  } else if (cmd.includes('হ্যাশট্যাগ') || cmd.includes('hashtag')) {
+    const topic = document.querySelector('#capTopic')?.value.trim();
+    if (!topic) action = 'প্রথমে বিষয় লিখো';
+    else {
+      lastTopic = topic;
+      captions = [makeHashtags(topic)];
+      addLog(`হ্যাশট্যাগ বানানো হয়েছে: ${topic}`);
+      action = 'হ্যাশট্যাগ বানানো হয়েছে';
+    }
+  } else if (cmd.includes('কিউ') || cmd.includes('queue')) {
+    document.querySelector('#queueList')?.scrollIntoView();
+    action = `কিউতে ${dash.queue.length}টি পোস্ট আছে`;
+  } else if (cmd.includes('লগ')) {
+    document.querySelector('#logList')?.scrollIntoView();
+    action = 'অ্যাক্টিভিটি লগ দেখাচ্ছি';
+  } else if (cmd.includes('উপরে') || cmd.includes('হোম') || cmd.includes('home')) {
+    window.scrollTo(0, 0);
+    action = 'উপরে চলে এসেছি';
+  } else {
+    action = 'বুঝতে পারিনি, আবার বলো';
+  }
+  addLog(`🎙️ ভয়েস: "${raw}" → ${action}`);
+  speak(action);
+  render();
+}
+
 app.addEventListener('click', async event => {
   const target = event.target;
+
+  if (target.id === 'micBtn') {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+      alert('এই ব্রাউজারে ভয়েস চলে না — Chrome ব্রাউজারে চালাও।');
+      return;
+    }
+    if (listening) {
+      listening = false;
+      try { recognition?.stop(); } catch { /* ignore */ }
+      recognition = null;
+      render();
+      return;
+    }
+    try {
+      recognition = new SR();
+      recognition.lang = 'bn-BD';
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.onresult = e => {
+        const transcript = e.results?.[e.resultIndex || 0]?.[0]?.transcript || '';
+        if (transcript.trim()) handleVoiceCommand(transcript.trim());
+      };
+      recognition.onerror = () => {
+        listening = false;
+        recognition = null;
+        render();
+      };
+      recognition.onend = () => {
+        if (listening) { try { recognition?.start(); } catch { /* ignore */ } }
+      };
+      recognition.start();
+      listening = true;
+      speak('ভয়েস চালু হয়েছে, বলো');
+      render();
+    } catch {
+      alert('ভয়েস চালু করা যায়নি — মাইকের অনুমতি দাও, তারপর আবার চেষ্টা করো।');
+    }
+    return;
+  }
 
   if (target.dataset.mode) {
     dash.mode = target.dataset.mode;
