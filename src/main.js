@@ -24,6 +24,7 @@ let recognition = null;
 let listening = false;
 let lastVoice = '';
 let sidebarOpen = false;
+let lastBrowserUrl = 'https://example.com';
 let chatKey = localStorage.getItem('openx_gemini_key') || '';
 let chatHist = loadChat();
 let chatBusy = false;
@@ -139,11 +140,12 @@ function render() {
       .chatrow input{flex:1}
       .tools{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
       .tool{background:#f8fafc;border:1px solid #e2e8f0;color:#1a2433;padding:12px 4px;border-radius:12px;font-size:12px}
+      .browserFrame{width:100%;height:420px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;margin-top:10px}
     </style>
     <div class="wrap">
       <header class="topbar">
         <button id="menuBtn" class="ghost">☰</button>
-        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.5 • সবকিছু এক জায়গায়</div></div>
+        <div><h1 style="margin:0">🚀 OpenX</h1><div class="muted">অটো পোস্টিং ড্যাশবোর্ড v2.6 • সবকিছু এক জায়গায়</div></div>
       </header>
       <div class="drawer ${sidebarOpen ? 'open' : ''}" id="drawer">
         <h3 style="margin-top:0">☰ মেনু</h3>
@@ -229,6 +231,21 @@ function render() {
         <p class="muted">কিউ: ${dash.queue.filter(q => q.status !== 'Published').length}টি অপেক্ষমাণ • পাবলিশ: ${dash.published}</p>
       </section>
 
+      <section class="card" id="sec-browser">
+        <h3>🌐 Browser — লাইভ</h3>
+        <input id="url" placeholder="example.com অথবা https://example.com" autocomplete="url">
+        <button id="open">ওয়েবসাইট খোলো</button>
+        <input id="search" placeholder="Google-এ কী সার্চ করবে?">
+        <button id="searchBtn" class="secondary">Google Search</button>
+        <iframe id="browserFrame" src="${lastBrowserUrl}" class="browserFrame" title="ব্রাউজার"></iframe>
+        <p class="muted">সাইটটি এখানেই দেখা যাবে। কিছু সাইট (Facebook, Google) নিজেদের এমবেড হতে দেয় না — সেক্ষেত্রে নিচের বাটন চাপো।</p>
+        <button id="openExternal" class="secondary">↗️ ব্রাউজারে খোলো</button>
+        <div id="bmList">${(dash.bookmarks || []).map(b => `
+          <div class="logitem">${escapeHTML(b.title)} <button class="ghost" data-open-bm="${b.id}">খোলো</button> <button class="danger" data-del-bm="${b.id}">✕</button></div>`).join('')}
+        </div>
+        <button id="addBookmark" class="secondary">🔖 এই ঠিকানা বুকমার্ক করো</button>
+      </section>
+
       <div class="row" style="margin-top:12px">
         ${MODES.map(m => `<button class="modebtn secondary ${dash.mode === m.id ? 'on' : ''}" data-mode="${m.id}">${m.name}<small>${m.desc}</small></button>`).join('')}
       </div>
@@ -299,17 +316,6 @@ function render() {
         </div>
       </section>
 
-      <section class="card" id="sec-browser">
-        <h3>🌐 Browser</h3>
-        <input id="url" placeholder="example.com অথবা https://example.com" autocomplete="url">
-        <button id="open">ওয়েবসাইট খোলো</button>
-        <input id="search" placeholder="Google-এ কী সার্চ করবে?">
-        <button id="searchBtn" class="secondary">Google Search</button>
-        <div id="bmList">${(dash.bookmarks || []).map(b => `
-          <div class="logitem">${escapeHTML(b.title)} <button class="ghost" data-open-bm="${b.id}">খোলো</button> <button class="danger" data-del-bm="${b.id}">✕</button></div>`).join('')}
-        </div>
-        <button id="addBookmark" class="secondary">🔖 এই ঠিকানা বুকমার্ক করো</button>
-      </section>
 
       <section class="card" id="sec-tasks">
         <h3>🤖 Agent Task Planner</h3>
@@ -362,7 +368,7 @@ function render() {
         <h3>⚙️ সেটিংস</h3>
         <button id="exportData" class="secondary">ডেটা এক্সপোর্ট (JSON)</button>
         <button id="clearAll" class="danger">সব ডেটা মুছুন</button>
-        <p class="muted">OpenX Automation v2.5 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
+        <p class="muted">OpenX Automation v2.6 • Prototype • কোনো পাসওয়ার্ড বা API key এখানে লিখবে না — টোকেন শুধু এই ডিভাইসে থাকে।</p>
       </section>
       </div>
       </div>
@@ -399,8 +405,9 @@ async function handleVoiceCommand(raw) {
   lastVoice = raw;
   let action = '';
   const openSite = async (url, name) => {
-    await Browser.open({ url });
+    lastBrowserUrl = url;
     bumpVisit();
+    render();
     action = `${name} খুলছি`;
   };
   if (cmd.includes('facebook') || cmd.includes('ফেসবুক')) await openSite('https://www.facebook.com', 'Facebook');
@@ -450,7 +457,9 @@ async function runAiActions(text) {
   const opens = [...text.matchAll(/\[OPEN:(facebook|youtube|instagram|threads|google)\]/gi)];
   for (const m of opens) {
     const sites = { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net', google: 'https://www.google.com' };
-    try { await Browser.open({ url: sites[m[1].toLowerCase()] }); bumpVisit(); didAction = true; } catch { /* ignore */ }
+    lastBrowserUrl = sites[m[1].toLowerCase()];
+    bumpVisit();
+    didAction = true;
   }
   const cap = text.match(/\[CAPTION:([^\]]+)\]/i);
   if (cap) {
@@ -587,10 +596,9 @@ app.addEventListener('click', async event => {
     if (t === 'autoclick') {
       const connected = PLATFORMS.filter(p => platformState(p.id).connected);
       if (!connected.length) return alert('আগে একটি প্ল্যাটফর্ম কানেক্ট করো।');
-      for (const p of connected) {
-        try { await Browser.open({ url: { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net' }[p.id] }); bumpVisit(); } catch { /* ignore */ }
-      }
-      addLog(`🖱️ Auto Click: ${connected.length}টি প্ল্যাটফর্ম খোলা হয়েছে`);
+      lastBrowserUrl = { facebook: 'https://www.facebook.com', youtube: 'https://www.youtube.com', instagram: 'https://www.instagram.com', threads: 'https://www.threads.net' }[connected[0].id];
+      bumpVisit();
+      addLog(`🖱️ Auto Click: ${connected[0].name} খোলা হয়েছে`);
       render();
     } else if (t === 'autofill') {
       if (!captions.length) return alert('আগে ক্যাপশন বানাও।');
@@ -608,6 +616,11 @@ app.addEventListener('click', async event => {
     document.querySelector('#micBtn')?.click();
     return;
   }
+  if (target.id === 'openExternal') {
+    await Browser.open({ url: lastBrowserUrl });
+    bumpVisit();
+    return;
+  }
   if (target.id === 'addBookmark') {
     let url = document.querySelector('#url')?.value.trim();
     if (!url) return alert('প্রথমে ঠিকানা লিখো।');
@@ -621,7 +634,7 @@ app.addEventListener('click', async event => {
   }
   if (target.dataset.openBm) {
     const bm = (dash.bookmarks || []).find(b => b.id === target.dataset.openBm);
-    if (bm) { await Browser.open({ url: bm.url }); bumpVisit(); }
+    if (bm) { lastBrowserUrl = bm.url; bumpVisit(); render(); }
     return;
   }
   if (target.dataset.delBm) {
@@ -787,8 +800,9 @@ app.addEventListener('click', async event => {
     try {
       const parsed = new URL(url);
       if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Invalid protocol');
-      await Browser.open({ url: parsed.href });
+      lastBrowserUrl = parsed.href;
       bumpVisit();
+      render();
     } catch {
       alert('ঠিকানাটি সঠিক নয় অথবা Browser খোলা যায়নি।');
     }
@@ -797,8 +811,9 @@ app.addEventListener('click', async event => {
   if (target.id === 'searchBtn') {
     const query = document.querySelector('#search').value.trim();
     if (!query) return alert('সার্চের বিষয় লিখুন।');
-    await Browser.open({ url: `https://www.google.com/search?q=${encodeURIComponent(query)}` });
+    lastBrowserUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
     bumpVisit();
+    render();
     return;
   }
 
